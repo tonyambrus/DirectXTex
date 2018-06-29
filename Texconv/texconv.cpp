@@ -807,8 +807,6 @@ namespace
         D3D_FEATURE_LEVEL featureLevels[] =
         {
             D3D_FEATURE_LEVEL_11_0,
-            D3D_FEATURE_LEVEL_10_1,
-            D3D_FEATURE_LEVEL_10_0,
         };
 
         UINT createDeviceFlags = 0;
@@ -835,27 +833,6 @@ namespace
             (pAdapter) ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
             nullptr, createDeviceFlags, featureLevels, _countof(featureLevels),
             D3D11_SDK_VERSION, pDevice, &fl, nullptr);
-        if (SUCCEEDED(hr))
-        {
-            if (fl < D3D_FEATURE_LEVEL_11_0)
-            {
-                D3D11_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS hwopts;
-                hr = (*pDevice)->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &hwopts, sizeof(hwopts));
-                if (FAILED(hr))
-                    memset(&hwopts, 0, sizeof(hwopts));
-
-                if (!hwopts.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x)
-                {
-                    if (*pDevice)
-                    {
-                        (*pDevice)->Release();
-                        *pDevice = nullptr;
-                    }
-                    hr = HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
-                }
-            }
-        }
-
         if (SUCCEEDED(hr))
         {
             ComPtr<IDXGIDevice> dxgiDevice;

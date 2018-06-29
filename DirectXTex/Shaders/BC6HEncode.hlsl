@@ -979,39 +979,6 @@ void EncodeBlockCS(uint GI : SV_GroupIndex, uint3 groupID : SV_GroupID)
     }
 }
 
-uint float2half1( float f )
-{
-    uint Result;
-
-    uint IValue = asuint(f);
-    uint Sign = (IValue & 0x80000000U) >> 16U;
-    IValue = IValue & 0x7FFFFFFFU;
-    
-    if (IValue > 0x47FFEFFFU)
-    {
-        // The number is too large to be represented as a half.  Saturate to infinity.
-        Result = 0x7FFFU;
-    }
-    else
-    {
-        if (IValue < 0x38800000U)
-        {
-            // The number is too small to be represented as a normalized half.
-            // Convert it to a denormalized value.
-            uint Shift = 113U - (IValue >> 23U);
-            IValue = (0x800000U | (IValue & 0x7FFFFFU)) >> Shift;
-        }
-        else
-        {
-            // Rebias the exponent to represent the value as a normalized half.
-            IValue += 0xC8000000U;
-        }
-
-        Result = ((IValue + 0x0FFFU + ((IValue >> 13U) & 1U)) >> 13U)&0x7FFFU; 
-    }
-    return (Result|Sign);
-}
-
 uint3 float2half( float3 endPoint_f )
 {
     //uint3 sign = asuint(endPoint_f) & 0x80000000;
@@ -1027,7 +994,7 @@ uint3 float2half( float3 endPoint_f )
     //    : ( ( sign >> 16 ) | ( ( ( expo - 0x38000000 ) | base ) >> 13 ) ) ) );
 
 
-    return uint3( float2half1( endPoint_f.x ), float2half1( endPoint_f.y ), float2half1( endPoint_f.z ) );
+    return uint3(f32tof16( endPoint_f.x ), f32tof16( endPoint_f.y ), f32tof16( endPoint_f.z ) );
 }
 int3 start_quantize( uint3 pixel_h )
 {
@@ -1204,40 +1171,6 @@ void generate_palette_unquantized16( out uint3 palette, int3 low, int3 high, int
     palette = finish_unquantize( tmp );
 }
 
-float half2float1( uint Value )
-{
-    uint Mantissa = (uint)(Value & 0x03FF);
-
-    uint Exponent;
-    if ((Value & 0x7C00) != 0)  // The value is normalized
-    {
-        Exponent = (uint)((Value >> 10) & 0x1F);
-    }
-    else if (Mantissa != 0)     // The value is denormalized
-    {
-        // Normalize the value in the resulting float
-        Exponent = 1;
-
-        do
-        {
-            Exponent--;
-            Mantissa <<= 1;
-        } while ((Mantissa & 0x0400) == 0);
-
-        Mantissa &= 0x03FF;
-    }
-    else                        // The value is zero
-    {
-        Exponent = (uint)(-112);
-    }
-
-    uint Result = ((Value & 0x8000) << 16) | // Sign
-                      ((Exponent + 112) << 23) | // Exponent
-                      (Mantissa << 13);          // Mantissa
-
-    return asfloat(Result);
-}
-
 float3 half2float(uint3 color_h )
 {
     //uint3 sign = color_h & 0x8000;
@@ -1246,7 +1179,7 @@ float3 half2float(uint3 color_h )
     //return ( expo == 0 ) ? asfloat( ( sign << 16 ) | asuint( float3(base) / 16777216 ) ) //16777216 = 2^24
     //    : asfloat( ( sign << 16 ) | ( ( ( expo + 0x1C000 ) | base ) << 13 ) ); //0x1C000 = 0x1FC00 - 0x3C00
 
-    return float3( half2float1( color_h.x ), half2float1( color_h.y ), half2float1( color_h.z ) );
+    return float3(f16tof32( color_h.x ), f16tof32( color_h.y ), f16tof32( color_h.z ) );
 }
 
 void block_package( inout uint4 block, int2x3 endPoint[2], uint mode_type, uint partition_index ) // for mode 1 - 10
