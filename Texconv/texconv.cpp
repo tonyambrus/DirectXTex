@@ -425,6 +425,7 @@ const SValue g_pDirectCompute[] =
     { L"4.0", D3D_FEATURE_LEVEL_10_0 },
     { L"4.1", D3D_FEATURE_LEVEL_10_1 },
     { L"5.0", D3D_FEATURE_LEVEL_11_0 },
+    { nullptr, 0 }
 };
 
 //////////////////////////////////////////////////////////////////////////////
